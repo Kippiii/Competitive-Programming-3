@@ -1,11 +1,45 @@
 import java.util.*;
 
+public class Tester {
+     public static void main(String[] args) {
+          int[] A = {18, 17, 13, 19, 15, 11, 20, 99};       // make n a power of 2
+          SegmentTree st = new SegmentTree(A);
+
+          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
+          System.out.printf("              A is {18,17,13,19,15,11,20,oo}\n");
+          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // index 2
+          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // index 5
+          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // index 4
+
+          st.update(5, 5, 77);                           // update A[5] to 77
+          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
+          System.out.printf("Now, modify A into {18,17,13,19,15,77,20,oo}\n");
+          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // remains index 2
+          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // now index 4
+          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // remains index 4
+
+          st.update(0, 3, 30);                           // update A[0..3] to 30
+          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
+          System.out.printf("Now, modify A into {30,30,30,30,15,77,20,oo}\n");
+          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // [0,1,2,3] all correct
+          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // remains index 4
+          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // remains index 4
+
+          st.update(3, 3, 7);                            // update A[3] to 7
+          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
+          System.out.printf("Now, modify A into {30,30,30, 7,15,77,20,oo}\n");
+          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // now index 3
+          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // remains index 4
+          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // now index 3
+     }
+}
+
 class SegmentTree {
-     private int st[], A[], n;
-     private int left(int p) {
+     private int st[], A[], n, lazy[];
+     private int l(int p) {
           return p << 1;
      }
-     private int right(int p) {
+     private int r(int p) {
           return (p << 1) + 1;
      }
 
@@ -13,54 +47,67 @@ class SegmentTree {
           A = _A;
           n = A.length;
           st = new int[4*n];
-          for (int i = 0; i < 4*n; i++) st[i] = 0;
+          lazy = new int[4*n];
+          for (int i = 0; i < 4*n; i++) {st[i] = 0; lazy[i] = -1;}
           build(1, 0, n - 1);
      }
 
-     private void build(int p, int l, int r) {
-          if (l == r)
-               st[p] = l;
+     private int conquer(int a, int b) {
+          if (a == -1) return b;
+          if (b == -1) return a;
+          return A[a] <= A[b] ? a : b;
+     }
+
+     private void build(int p, int L, int R) {
+          if (L == R)
+               st[p] = L;
           else {
-               build(left(p), l, (l + r) / 2);
-               build(right(p), (l + r) / 2 + 1, r);
-               int p1 = st[left(p)];
-               int p2 = st[right(p)];
-               st[p] = (A[p1] <= A[p2]) ? p1 : p2;
+               int m = (L+R)/2;
+               build(l(p), L, m);
+               build(r(p), m + 1, R);
+               st[p] = conquer(st[l(p)], st[r(p)]);
           }
      }
 
-     private int rmq(int p, int l, int r, int i, int j) {
-          if (i > r || j < l) return -1;
-          if (l >= i && r <= j) return st[p];
-
-          int p1 = rmq(left(p), l, (l + r) / 2, i, j);
-          int p2 = rmq(right(p), (l + r) / 2 + 1, r, i, j);
-
-          if (p1 == -1) return p2;
-          if (p2 == -1) return p1;
-          return (A[p1] <= A[p2]) ? p1 : p2;
+     private void propagate(int p, int L, int R) {
+          if (lazy[p] != -1) {
+               st[p] = L;
+               if (L != R)
+                    lazy[l(p)] = lazy[r(p)] = lazy[p];
+               else
+                    A[L] = lazy[p];
+               lazy[p] = -1;
+          }
      }
 
-     private int updatePoint(int p, int l, int r, int i, int newValue) {
-          if (i > r || i < l)
-               return st[p];
+     private int rmq(int p, int L, int R, int i, int j) {
+          propagate(p, L, R);
+          if (i > j) return -1;
+          if (L >= i && R <= j) return st[p];
+          int m = (L+R)/2;
+          return conquer(rmq(l(p), L, m, i, Math.min(m, j)), rmq(r(p), m+1, R, Math.max(i, m+1), j));
+     }
 
-          if (l == i && r == i) {
-               A[i] = newValue;
-               return l;
+     private void update(int p, int L, int R, int i, int j, int val) {
+          propagate(p, L, R);
+          if (i > j) return;
+          if (L >= i && R <= j) {
+               A[L] = val;
+               lazy[p] = val;
+               propagate(p, L, R);
+          } else {
+               int m = (L+R)/2;
+               update(l(p), L, m, i, Math.min(m, j), val);
+               update(r(p), m+1, R, Math.max(i, m+1), j, val);
+               st[p] = conquer(st[l(p)], st[r(p)]);
           }
-
-          int p1 = updatePoint(left(p), l, (l + r) / 2, i, newValue);
-          int p2 = updatePoint(right(p), (l + r) / 2 + 1, r, i, newValue);
-
-          return st[p] = (A[p1] <= A[p2]) ? p1 : p2;
      }
 
      public int rmq(int i, int j) {
           return rmq(1, 0, n - 1, i, j);
      }
 
-     public int updatePoint(int i, int newValue) {
-          return updatePoint(1, 0, n - 1, i, newValue);
+     public void update(int i, int j, int val) {
+          update(1, 0, n - 1, i, j, val);
      }
 }
