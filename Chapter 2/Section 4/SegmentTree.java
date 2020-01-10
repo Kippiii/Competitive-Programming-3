@@ -1,39 +1,5 @@
 import java.util.*;
 
-public class Tester {
-     public static void main(String[] args) {
-          int[] A = {18, 17, 13, 19, 15, 11, 20, 99};       // make n a power of 2
-          SegmentTree st = new SegmentTree(A);
-
-          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
-          System.out.printf("              A is {18,17,13,19,15,11,20,oo}\n");
-          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // index 2
-          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // index 5
-          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // index 4
-
-          st.update(5, 5, 77);                           // update A[5] to 77
-          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
-          System.out.printf("Now, modify A into {18,17,13,19,15,77,20,oo}\n");
-          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // remains index 2
-          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // now index 4
-          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // remains index 4
-
-          st.update(0, 3, 30);                           // update A[0..3] to 30
-          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
-          System.out.printf("Now, modify A into {30,30,30,30,15,77,20,oo}\n");
-          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // [0,1,2,3] all correct
-          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // remains index 4
-          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // remains index 4
-
-          st.update(3, 3, 7);                            // update A[3] to 7
-          System.out.printf("              idx    0, 1, 2, 3, 4, 5, 6, 7\n");
-          System.out.printf("Now, modify A into {30,30,30, 7,15,77,20,oo}\n");
-          System.out.printf("RMQ(1, 3) = %d\n", st.rmq(1, 3));      // now index 3
-          System.out.printf("RMQ(4, 7) = %d\n", st.rmq(4, 7));      // remains index 4
-          System.out.printf("RMQ(3, 4) = %d\n", st.rmq(3, 4));      // now index 3
-     }
-}
-
 class SegmentTree {
      private int st[], A[], n, lazy[];
      private int l(int p) {
